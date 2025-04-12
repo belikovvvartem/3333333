@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Адмінпанель</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #121212;
+            color: white;
+            transition: all 0.3s ease;
+        }
+        #questions-list {
+            list-style: none;
+            padding: 0;
+            margin-bottom: 20px;
+        }
+        #questions-list li {
+            padding: 10px;
+            border: 1px solid #444;
+            margin: 10px 0;
+            background: #1e1e1e;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+        #questions-list canvas {
+            margin-left: 10px;
+            background: #1e1e1e;
+            border-radius: 8px;
+            width: 50px;
+            height: 50px;
+        }
+        button {
+            padding: 5px 10px;
+            margin: 5px;
+            background: #ffaa00;
+            border: none;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        button:hover {
+            background: #ffaa00;
+        }
+        form {
+            margin-top: 20px;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        input[type="text"] {
+            padding: 5px;
+            margin: 5px;
+            background: #1e1e1e;
+            border: 1px solid #444;
+            color: white;
+            border-radius: 4px;
+            width: calc(100% - 20px);
+        }
+        canvas {
+            background: #1e1e1e;
+            border-radius: 12px;
+            touch-action: none;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
+            margin: 10px 0;
+            width: 100%;
+            max-width: 300px;
+            height: 300px;
+        }
+        #editForm {
+            margin-top: 20px;
+            display: none;
+        }
+        @media (max-width: 600px) {
+            #questions-list li {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            #questions-list canvas {
+                margin: 10px 0;
+            }
+            button {
+                width: 100%;
+                margin: 5px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Адмінпанель</h1>
+    <ul id="questions-list"></ul>
+    <form id="addForm">
+        <input type="text" id="questionText" placeholder="Текст питання" required>
+        <div>
+            <p>Намалюйте код на канвасі:</p>
+            <canvas id="addCanvas" width="300" height="300"></canvas>
+            <button type="button" onclick="clearAddCanvas()">Очистити канвас</button>
+        </div>
+        <button type="submit">Додати</button>
+    </form>
+    <form id="editForm">
+        <input type="text" id="editQuestionText" placeholder="Текст питання" required>
+        <div>
+            <p>Намалюйте новий код на канвасі:</p>
+            <canvas id="editCanvas" width="300" height="300"></canvas>
+            <button type="button" onclick="clearEditCanvas()">Очистити канвас</button>
+        </div>
+        <button type="submit">Зберегти зміни</button>
+        <button type="button" onclick="cancelEdit()">Скасувати</button>
+    </form>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
+        import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, orderBy, query, getDoc } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCiHLrGnPv1kRQ4SdX0qAdsVWLYGdASERc",
+            authDomain: "premium-d5066.firebaseapp.com",
+            projectId: "premium-d5066",
+            storageBucket: "premium-d5066.firebasestorage.app",
+            messagingSenderId: "408653526535",
+            appId: "1:408653526535:web:0a0c2a04fda12a09a6dca2",
+            measurementId: "G-71LHFB8FK3"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const addCanvas = document.getElementById('addCanvas');
+        const addCtx = addCanvas.getContext('2d');
+        const editCanvas = document.getElementById('editCanvas');
+        const editCtx = editCanvas.getContext('2d');
+        const radius = 15;
+        const offset = 100;
+        const points = [];
+        let addPattern = [];
+        let editPattern = [];
+        let isDrawing = false;
+        let currentPos = null;
+        let editingId = null;
+
+        for (let y = 0; y < 3; y++) {
+            for (let x = 0; x < 3; x++) {
+                points.push({
+                    x: x * offset + offset / 2,
+                    y: y * offset + offset / 2,
+                    touched: false
+                });
+            }
+        }
+
+        function drawCanvas(canvas, ctx, pattern) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = '#ffaa00';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            for (let i = 0; i < pattern.length; i++) {
+                const p = pattern[i];
+                if (i === 0) ctx.moveTo(p.x, p.y);
+                else ctx.lineTo(p.x, p.y);
+            }
+            if (isDrawing && currentPos && pattern.length > 0) {
+                ctx.lineTo(currentPos.x, currentPos.y);
+            }
+            ctx.stroke();
+            for (const p of points) {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+                ctx.fillStyle = p.touched ? '#ffaa00' : '#444';
+                ctx.fill();
+            }
+        }
+
+        function getPos(e, canvas) {
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+            const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+            return { x, y };
+        }
+
+        function dist(a, b) {
+            const dx = a.x - b.x;
+            const dy = a.y - b.y;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+
+        function findPoint(pos, pattern) {
+            for (let i = 0; i < points.length; i++) {
+                const p = points[i];
+                const dx = p.x - pos.x;
+                const dy = p.y - pos.y;
+                if (Math.sqrt(dx * dx + dy * dy) < radius * 2) {
+                    if (!p.touched) {
+                        p.touched = true;
+                        pattern.push(p);
+                        return;
+                    }
+                }
+            }
+        }
+
+        function setupCanvas(canvas, ctx, pattern) {
+            canvas.addEventListener('mousedown', (e) => start(e, canvas, pattern));
+            canvas.addEventListener('mousemove', (e) => move(e, canvas, ctx, pattern));
+            canvas.addEventListener('mouseup', () => end(canvas, ctx, pattern));
+            canvas.addEventListener('touchstart', (e) => start(e, canvas, pattern));
+            canvas.addEventListener('touchmove', (e) => {
+                move(e, canvas, ctx, pattern);
+                e.preventDefault();
+            });
+            canvas.addEventListener('touchend', () => end(canvas, ctx, pattern));
+        }
+
+        function start(e, canvas, pattern) {
+            isDrawing = true;
+            pattern.length = 0;
+            points.forEach(p => p.touched = false);
+            currentPos = null;
+            findPoint(getPos(e, canvas), pattern);
+            drawCanvas(canvas, ctx, pattern);
+        }
+
+        function move(e, canvas, ctx, pattern) {
+            if (isDrawing) {
+                currentPos = getPos(e, canvas);
+                findPoint(currentPos, pattern);
+                drawCanvas(canvas, ctx, pattern);
+            }
+        }
+
+        function end(canvas, ctx, pattern) {
+            if (!isDrawing) return;
+            isDrawing = false;
+            currentPos = null;
+            drawCanvas(canvas, ctx, pattern);
+        }
+
+        setupCanvas(addCanvas, addCtx, addPattern);
+        setupCanvas(editCanvas, editCtx, editPattern);
+
+        window.clearAddCanvas = function() {
+            addPattern = [];
+            points.forEach(p => p.touched = false);
+            drawCanvas(addCanvas, addCtx, addPattern);
+        };
+
+        window.clearEditCanvas = function() {
+            editPattern = [];
+            points.forEach(p => p.touched = false);
+            drawCanvas(editCanvas, editCtx, editPattern);
+        };
+
+        function drawMiniPattern(canvas, answer) {
+            const ctx = canvas.getContext('2d');
+            const miniRadius = 5;
+            const miniOffset = 16;
+            const miniPoints = [];
+            for (let y = 0; y < 3; y++) {
+                for (let x = 0; x < 3; x++) {
+                    miniPoints.push({
+                        x: x * miniOffset + miniOffset / 2,
+                        y: y * miniOffset + miniOffset / 2
+                    });
+                }
+            }
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = '#ffaa00';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            answer.forEach((index, i) => {
+                const p = miniPoints[index];
+                if (i === 0) ctx.moveTo(p.x, p.y);
+                else ctx.lineTo(p.x, p.y);
+            });
+            ctx.stroke();
+            miniPoints.forEach((p, i) => {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, miniRadius, 0, Math.PI * 2);
+                ctx.fillStyle = answer.includes(i) ? '#ffaa00' : '#444';
+                ctx.fill();
+            });
+        }
+
+        async function loadQuestions() {
+            const q = query(collection(db, 'questions'), orderBy('order'));
+            const snapshot = await getDocs(q);
+            const questions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const list = document.getElementById('questions-list');
+            list.innerHTML = '';
+            questions.forEach(q => {
+                const li = document.createElement('li');
+                li.dataset.id = q.id;
+                const textSpan = document.createElement('span');
+                textSpan.innerText = q.text;
+                const canvas = document.createElement('canvas');
+                canvas.width = 50;
+                canvas.height = 50;
+                drawMiniPattern(canvas, q.answer);
+                const buttons = document.createElement('div');
+                buttons.innerHTML = `<button onclick="editQuestion('${q.id}')">Редагувати</button> <button onclick="deleteQuestion('${q.id}')">Видалити</button>`;
+                li.appendChild(textSpan);
+                li.appendChild(canvas);
+                li.appendChild(buttons);
+                list.appendChild(li);
+            });
+            new Sortable(list, {
+                onEnd: async () => {
+                    const items = list.children;
+                    for (let i = 0; i < items.length; i++) {
+                        await updateDoc(doc(db, 'questions', items[i].dataset.id), { order: i + 1 });
+                    }
+                }
+            });
+        }
+
+        document.getElementById('addForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const text = document.getElementById('questionText').value;
+            if (addPattern.length === 0) {
+                alert("Будь ласка, намалюйте код на канвасі!");
+                return;
+            }
+            const answer = addPattern.map(p => points.indexOf(p));
+            const snapshot = await getDocs(query(collection(db, 'questions'), orderBy('order', 'desc')));
+            const maxOrder = snapshot.empty ? 0 : snapshot.docs[0].data().order;
+            await addDoc(collection(db, 'questions'), { text, answer, order: maxOrder + 1 });
+            document.getElementById('addForm').reset();
+            clearAddCanvas();
+            loadQuestions();
+        });
+
+        window.editQuestion = async function(id) {
+            const docRef = doc(db, 'questions', id);
+            const docSnap = await getDoc(docRef);
+            if (!docSnap.exists()) return;
+            const data = docSnap.data();
+            document.getElementById('editQuestionText').value = data.text;
+            editPattern = points.filter((_, i) => data.answer.includes(i));
+            editPattern.forEach(p => p.touched = true);
+            drawCanvas(editCanvas, editCtx, editPattern);
+            document.getElementById('addForm').style.display = 'none';
+            document.getElementById('editForm').style.display = 'block';
+            editingId = id;
+        };
+
+        document.getElementById('editForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (editPattern.length === 0) {
+                alert("Будь ласка, намалюйте код на канвасі!");
+                return;
+            }
+            const text = document.getElementById('editQuestionText').value;
+            const answer = editPattern.map(p => points.indexOf(p));
+            await updateDoc(doc(db, 'questions', editingId), { text, answer });
+            document.getElementById('editForm').style.display = 'none';
+            document.getElementById('addForm').style.display = 'block';
+            document.getElementById('editForm').reset();
+            clearEditCanvas();
+            editingId = null;
+            loadQuestions();
+        });
+
+        window.cancelEdit = function() {
+            document.getElementById('editForm').style.display = 'none';
+            document.getElementById('addForm').style.display = 'block';
+            document.getElementById('editForm').reset();
+            clearEditCanvas();
+            editingId = null;
+        };
+
+        window.deleteQuestion = async function(id) {
+            if (confirm("Видалити це питання?")) {
+                await deleteDoc(doc(db, 'questions', id));
+                loadQuestions();
+            }
+        };
+
+        loadQuestions();
+    </script>
+</body>
+</html>

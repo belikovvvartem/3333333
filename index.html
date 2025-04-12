@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Квест для брата</title>
+    <style>
+        body {
+            position: relative;
+            background: #121212;
+            color: white;
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: start;
+            height: 100vh;
+            margin: 0;
+            padding-top: 40px;
+            transition: background 0.4s ease;
+            height: 700px;
+        }
+        h2 {
+            margin-bottom: 20px;
+            text-align: center;
+            max-width: 90%;
+        }
+        canvas {
+            position: absolute;
+            bottom: 20px;
+            background: #1e1e1e;
+            border-radius: 12px;
+            touch-action: none;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <h2 id="riddle">Завантаження...</h2>
+    <canvas id="canvas" width="300" height="300"></canvas>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
+        import { getFirestore, collection, getDocs, query, orderBy } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCiHLrGnPv1kRQ4SdX0qAdsVWLYGdASERc",
+            authDomain: "premium-d5066.firebaseapp.com",
+            projectId: "premium-d5066",
+            storageBucket: "premium-d5066.firebasestorage.app",
+            messagingSenderId: "408653526535",
+            appId: "1:408653526535:web:0a0c2a04fda12a09a6dca2",
+            measurementId: "G-71LHFB8FK3"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        let riddles = [];
+        let currentRiddle = 0;
+        const riddleEl = document.getElementById('riddle');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const radius = 15;
+        const offset = 100;
+        const points = [];
+        let pattern = [];
+        let isDrawing = false;
+        let currentPos = null;
+
+        for (let y = 0; y < 3; y++) {
+            for (let x = 0; x < 3; x++) {
+                points.push({
+                    x: x * offset + offset / 2,
+                    y: y * offset + offset / 2,
+                    touched: false
+                });
+            }
+        }
+
+        async function loadRiddles() {
+            const q = query(collection(db, 'questions'), orderBy('order'));
+            const snapshot = await getDocs(q);
+            riddles = snapshot.docs.map(doc => doc.data());
+            setRiddle(currentRiddle);
+        }
+
+        function setRiddle(index) {
+            riddleEl.innerText = riddles[index]?.text || "УРА! 🎁 Всі загадки відгадані!";
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = '#ffaa00';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            for (let i = 0; i < pattern.length; i++) {
+                const p = pattern[i];
+                if (i === 0) ctx.moveTo(p.x, p.y);
+                else ctx.lineTo(p.x, p.y);
+            }
+            if (isDrawing && currentPos && pattern.length > 0) {
+                ctx.lineTo(currentPos.x, currentPos.y);
+            }
+            ctx.stroke();
+            for (const p of points) {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+                ctx.fillStyle = p.touched ? '#ffaa00' : '#444';
+                ctx.fill();
+            }
+        }
+
+        function getPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+            const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+            return { x, y };
+        }
+
+        function dist(a, b) {
+            const dx = a.x - b.x;
+            const dy = a.y - b.y;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+
+        function findPoint(pos) {
+            for (let i = 0; i < points.length; i++) {
+                const p = points[i];
+                const dx = p.x - pos.x;
+                const dy = p.y - pos.y;
+                if (Math.sqrt(dx * dx + dy * dy) < radius * 2) {
+                    const last = pattern[pattern.length - 1];
+                    if (pattern.length > 1 && pattern[pattern.length - 2] === p) {
+                        pattern.pop();
+                        last.touched = false;
+                        return;
+                    }
+                    if (!p.touched) {
+                        if (last) checkBetweenPoints(last, p);
+                        p.touched = true;
+                        pattern.push(p);
+                        return;
+                    }
+                }
+            }
+        }
+
+        function checkBetweenPoints(p1, p2) {
+            for (const p of points) {
+                if (!p.touched && p !== p1 && p !== p2) {
+                    const d1 = dist(p1, p);
+                    const d2 = dist(p2, p);
+                    const d3 = dist(p1, p2);
+                    if (Math.abs((d1 + d2) - d3) < 1) {
+                        p.touched = true;
+                        pattern.push(p);
+                    }
+                }
+            }
+        }
+
+        function arraysEqualIgnoreOrder(a, b) {
+            if (a.length !== b.length) return false;
+            return a.slice().sort().every((val, i) => val === b.slice().sort()[i]);
+        }
+
+        function start(e) {
+            isDrawing = true;
+            pattern = [];
+            points.forEach(p => p.touched = false);
+            currentPos = null;
+            document.body.style.background = '#121212';
+            findPoint(getPos(e));
+            draw();
+        }
+
+        function move(e) {
+            if (isDrawing) {
+                currentPos = getPos(e);
+                findPoint(currentPos);
+                draw();
+            }
+        }
+
+        function end() {
+            if (!isDrawing) return;
+            isDrawing = false;
+            currentPos = null;
+            draw();
+            const inputPattern = pattern.map(p => points.indexOf(p));
+            const correct = riddles[currentRiddle].answer;
+            const ok = arraysEqualIgnoreOrder(inputPattern, correct);
+            document.body.style.background = ok ? '#2e7d32' : '#b71c1c';
+            setTimeout(() => {
+                pattern = [];
+                points.forEach(p => p.touched = false);
+                document.body.style.background = '#121212';
+                if (ok) {
+                    currentRiddle++;
+                    setRiddle(currentRiddle);
+                }
+                draw();
+            }, 1000);
+        }
+
+        canvas.addEventListener('mousedown', start);
+        canvas.addEventListener('mousemove', move);
+        canvas.addEventListener('mouseup', end);
+        canvas.addEventListener('touchstart', start);
+        canvas.addEventListener('touchmove', e => {
+            move(e);
+            e.preventDefault();
+        });
+        canvas.addEventListener('touchend', end);
+
+        loadRiddles();
+        draw();
+    </script>
+</body>
+</html>
