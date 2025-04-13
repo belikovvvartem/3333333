@@ -1,0 +1,194 @@
+@import url('https://fonts.googleapis.com/css2?family=Rubik+Bubbles&display=swap');
+
+body {
+    position: relative;
+    background: #121212;
+    color: white;
+    font-family: "Rubik Bubbles", system-ui;
+    font-weight: 400;
+    font-style: normal;
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    box-sizing: border-box;
+    position: relative;
+}
+
+h1, h2 {
+    margin: 10px 0;
+    text-align: center;
+    max-width: 90%;
+}
+
+h2#riddle {
+    position: absolute;
+    top: 50px;
+    font-size: 1.5em;
+    padding: 15px;
+    border-radius: 100px;
+    background: rgba(254, 254, 254, 0.245);
+    z-index: 100;
+}
+
+.emoji {
+    position: absolute;
+    top: 0;
+    margin-top: -50px;
+    font-size: 2rem;
+    animation: fall linear forwards;
+}
+@keyframes fall {
+    to {
+        transform: translateY(100vh);
+    }
+}
+
+
+canvas {
+    position: absolute;
+    z-index: 100;
+    bottom: 50px;
+    background: #1e1e1ed5;
+    border-radius: 12px;
+    touch-action: none;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
+    width: 100%;
+    max-width: 300px;
+    height: auto;
+    aspect-ratio: 1/1;
+}
+
+#feedback {
+    margin-top: 20px;
+    font-size: 1.2em;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    text-align: center;
+    max-width: 90%;
+}
+
+#feedback.show {
+    opacity: 1;
+}
+
+#page {
+    text-align: center;
+}
+
+#pageText {
+    font-size: 1.5em;
+    margin-bottom: 20px;
+}
+
+button, #continueBtn {
+    padding: 10px 20px;
+    margin: 5px;
+    background: #ffaa00;
+    border: none;
+    color: white;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    font-size: 1em;
+}
+
+button:hover, #continueBtn:hover {
+    background: #e69500;
+}
+
+form {
+    margin-top: 20px;
+    width: 100%;
+    max-width: 400px;
+}
+
+input[type="text"] {
+    padding: 10px;
+    margin: 5px 0;
+    background: #1e1e1e;
+    border: 1px solid #444;
+    color: white;
+    border-radius: 8px;
+    width: calc(100% - 22px);
+}
+
+#questions-list, #pages-list {
+    list-style: none;
+    padding: 0;
+    margin-bottom: 20px;
+    width: 100%;
+    max-width: 400px;
+}
+
+#questions-list li, #pages-list li {
+    padding: 10px;
+    border: 1px solid #444;
+    margin: 10px 0;
+    background: #1e1e1e;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+}
+
+#questions-list canvas {
+    margin-left: 10px;
+    background: #1e1e1e;
+    border-radius: 8px;
+    width: 50px;
+    height: 50px;
+}
+
+.gift {
+    position: absolute;
+    font-size: 2em;
+    color: #ffaa00;
+    pointer-events: none;
+}
+
+@keyframes fireworks {
+    0% { opacity: 0; transform: scale(0); }
+    50% { opacity: 1; transform: scale(1.5); }
+    100% { opacity: 0; transform: scale(0); }
+}
+
+.firework {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background: #ffaa00;
+    border-radius: 50%;
+    animation: fireworks 2s infinite;
+    pointer-events: none;
+}
+
+@media (max-width: 600px) {
+    h2 {
+        font-size: 1.2em;
+    }
+    #progress {
+        font-size: 0.9em;
+    }
+    #feedback, #pageText {
+        font-size: 1em;
+    }
+    canvas {
+        max-width: 90%;
+    }
+    button, #continueBtn {
+        width: 100%;
+        padding: 10px;
+    }
+    #questions-list li, #pages-list li {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    #questions-list canvas {
+        margin: 10px 0;
+    }
+}

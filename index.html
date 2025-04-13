@@ -3,42 +3,39 @@
 <head>
     <meta charset="UTF-8" />
     <title>Квест для брата</title>
-    <style>
-        body {
-            position: relative;
-            background: #121212;
-            color: white;
-            font-family: sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: start;
-            height: 100vh;
-            margin: 0;
-            padding-top: 40px;
-            transition: background 0.4s ease;
-            height: 700px;
-        }
-        h2 {
-            margin-bottom: 20px;
-            text-align: center;
-            max-width: 90%;
-        }
-        canvas {
-            position: absolute;
-            bottom: 20px;
-            background: #1e1e1e;
-            border-radius: 12px;
-            touch-action: none;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
-        }
-    </style>
+    <link rel="stylesheet" href="style.css">
+
 </head>
 <body>
     <h2 id="riddle">Завантаження...</h2>
     <canvas id="canvas" width="300" height="300"></canvas>
 
     <script type="module">
+
+function createEmoji() {
+            const emoji = document.createElement('div');
+            emoji.classList.add('emoji');
+            emoji.textContent = '🎁';
+            
+            // Випадкова позиція по X
+            const xPos = Math.random() * window.innerWidth;
+            emoji.style.left = `${xPos}px`;
+            
+            // Випадковий час анімації (2-5 секунд)
+            const duration = Math.random() * 3 + 2;
+            emoji.style.animationDuration = `${duration}s`;
+            
+            document.body.appendChild(emoji);
+            
+            // Видаляємо елемент після завершення анімації
+            setTimeout(() => {
+                emoji.remove();
+            }, duration * 1000);
+        }
+
+        // Створюємо смайлики кожні 200 мс
+        setInterval(createEmoji, 200);
+
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
         import { getFirestore, collection, getDocs, query, orderBy } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js';
 
