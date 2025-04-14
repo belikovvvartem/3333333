@@ -2,14 +2,13 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Адмінпанель</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="admin.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 </head>
 <body>
     <h1>Адмінпанель</h1>
-    <ul id="questions-list"></ul>
     <form id="addForm">
         <input type="text" id="questionText" placeholder="Текст питання" required>
         <div>
@@ -29,6 +28,7 @@
         <button type="submit">Зберегти зміни</button>
         <button type="button" onclick="cancelEdit()">Скасувати</button>
     </form>
+    <ul id="questions-list"></ul>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
 
