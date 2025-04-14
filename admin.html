@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Адмінпанель</title>
     <link rel="stylesheet" href="admin.css">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
 </head>
 <body>
@@ -19,7 +19,7 @@
         <button type="submit">Додати</button>
     </form>
     <form id="editForm">
-        <input type="text" id="editQuestionText" placeholder="Текст питання" required>
+        <input type="text" id="editQuestionText" autocomplete="off" placeholder="Текст питання" required>
         <div>
             <p>Намалюйте новий код на канвасі:</p>
             <canvas id="editCanvas" width="300" height="300"></canvas>
