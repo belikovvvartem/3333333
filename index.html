@@ -1,32 +1,33 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8" />
     <title>Квест для брата</title>
     <link rel="stylesheet" href="style.css">
 
 </head>
+
 <body>
     <h2 id="riddle">Завантаження...</h2>
     <canvas id="canvas" width="300" height="300"></canvas>
-
     <script type="module">
 
-function createEmoji() {
+        function createEmoji() {
             const emoji = document.createElement('div');
             emoji.classList.add('emoji');
             emoji.textContent = '🎁';
-            
+
             // Випадкова позиція по X
             const xPos = Math.random() * window.innerWidth;
             emoji.style.left = `${xPos}px`;
-            
+
             // Випадковий час анімації (2-5 секунд)
             const duration = Math.random() * 3 + 2;
             emoji.style.animationDuration = `${duration}s`;
-            
+
             document.body.appendChild(emoji);
-            
+
             // Видаляємо елемент після завершення анімації
             setTimeout(() => {
                 emoji.remove();
@@ -214,4 +215,5 @@ function createEmoji() {
         draw();
     </script>
 </body>
+
 </html>
